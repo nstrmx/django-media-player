@@ -1,0 +1,30 @@
+:root {
+    --container-padding: 1rem;
+    --controller-width: 700px;
+}
+#player_container {  
+    position: fixed;
+    z-index: 100;
+    bottom: 0;
+    right: 0;
+    width: max-content;
+    padding: var(--container-padding);
+    background: #f1f3f4;
+    border: 1px solid lightgray;
+}
+#player_container button {
+    margin: auto;
+    padding: calc(var(--container-padding) / 2);
+}
+#media_controller {
+    width: var(--controller-width);
+}
+#repeat {
+    white-space: nowrap;
+}
+#result_list .playing, #result_list .paused {
+    background: var(--selected-row);
+}
+#result_list .column-play {
+    min-width: 70px;
+}
