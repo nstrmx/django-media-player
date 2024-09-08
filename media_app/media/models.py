@@ -31,6 +31,7 @@ class Media(models.Model):
     path = models.CharField(max_length=200, blank=False, null=False, unique=True)
     description = models.TextField(blank=True, null=False, default="")
     tags = models.ManyToManyField(Tag)
+    play_count = models.IntegerField(blank=False, null=False, default=0)
 
     class Meta:
         abstract = True

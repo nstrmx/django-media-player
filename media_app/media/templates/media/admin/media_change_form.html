@@ -1,19 +1,18 @@
 {% extends "admin/change_form.html" %}
-{% load static %}
+{% load static md5static %}
 
 
 {% block extrahead %}
 {{ block.super }}
 <script src="{% static "media/js/common.js" %}" type="text/javascript"></script>
 <script>
-window.urls.file_stream = "{% url "media-file-stream" %}";
-window.urls.update_duration = "{% url "media-update-duration" %}";
+    var global = {
+        urls: {
+            player: "{% url "media:player" %}",
+            worker_src_url: "{% md5static "media/js/worker.js" %}",
+        },
+    };
+    {% block media_type %}{% endblock media_type %}    
 </script>
-<script src="{% static "media/js/player_base.js" %}" type="text/javascript"></script>
-{% endblock extrahead%}
-
-
-{% block extrastyle %}
-{{ block.super }}
-<link rel="stylesheet" href="{% static "media/css/player.css" %}">
-{% endblock extrastyle %}
+<script type="text/javascript" src="{% static "media/js/host_handler.js" %}"></script>
+{% endblock extrahead %}

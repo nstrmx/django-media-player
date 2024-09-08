@@ -31,7 +31,6 @@ class TagsFilter(admin.RelatedFieldListFilter):
 class TagAdmin(admin.ModelAdmin):
     list_display = ("title", "updated")
     list_filter = ("updated",)
-    
 
 
 def get_play_button(media_id):

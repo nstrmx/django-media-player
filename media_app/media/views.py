@@ -1,7 +1,7 @@
 from datetime import timedelta
 from django.views import View
 from django.http.request import HttpRequest
-from django.http.response import StreamingHttpResponse, JsonResponse
+from django.http.response import StreamingHttpResponse, JsonResponse, HttpResponse
 from media.models import Audio, Radio, Video
 
 
@@ -79,3 +79,31 @@ class ViewMediaUpdateDuration(View):
         media.duration = timedelta(seconds=duration)
         media.save()
         return JsonResponse(dict(), status=200)
+    
+
+class ViewMediaUpdatePlayCount(View):
+    def post(self, request: HttpRequest) -> JsonResponse:
+        media_id = request.POST.get("id")
+        media_type = request.POST.get("type")
+        if media_id is None:
+            return JsonResponse(dict(), status=400)
+        match media_type:
+            case "audio":
+                media_class = Audio
+            case "radio":
+                media_class = Radio
+            case "video":
+                media_class = Video
+            case _:
+                raise NotImplementedError()
+        media = media_class.objects.get(id=media_id)
+        media.play_count = media.play_count + 1
+        media.save()
+        return JsonResponse(dict(), status=200)
+    
+
+class ViewPlayer(View):
+    def get(self, request: HttpRequest) -> HttpResponse:
+        from django.template.loader import render_to_string
+        content = render_to_string("media/player.html", {})
+        return HttpResponse(content)

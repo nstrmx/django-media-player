@@ -1,13 +1,6 @@
 {% extends "media/admin/media_change_list.html" %}
-{% load static %}
 
 
-{% block extrahead %}
-{{ block.super }}
-<script src="{% static "media/js/audio_player.js" %}" type="text/javascript"></script>
-<script>
-$(function(){
-    window.player = new AudioPlayer();
-});
-</script>
-{% endblock extrahead %}
+{% block media_type %}
+    global.media_type = "audio";
+{% endblock media_type %}

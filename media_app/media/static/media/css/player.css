@@ -1,14 +1,14 @@
 :root {
-    --container-padding: 1rem;
+    --container-padding: 0.5rem;
     --controller-width: 700px;
 }
-#player_container {  
-    position: fixed;
-    z-index: 100;
-    bottom: 0;
-    right: 0;
-    width: max-content;
-    padding: var(--container-padding);
+
+#content {
+    padding: 20px 40px 60px!important;
+}
+#player_container {
+    width: 100vw;
+    height: 100vh;
     background: #f1f3f4;
     border: 1px solid lightgray;
 }
