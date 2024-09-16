@@ -2,3 +2,4 @@
 media_app/static/
 __pycache__
 db.sqlite3*
+stream_backend/target/

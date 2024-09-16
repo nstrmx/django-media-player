@@ -1,10 +1,26 @@
 # Django Media Player
-Simple django media player implementation with shared web worker for learging purposes. 
-## Add media
+Simple django media player implementation with shared web worker and rust actix as stream backend for learning purposes. 
+## Example start
+Start django.
 ```
-python manage.py add_media --audio-dir ~/Music --video-dir ~/Videos/ --skip-existing-paths
+// Start django admin 127.0.0.1:8000
+cd media_app
+source .venv/bin/activate
+./manage.py migrate
+./manage.py createsuperuser
+./manage.py collectstatic
+./manage.py runserver
 ```
-Launches N workers to calculate md5 hex in parallel while adding new media to database, where N is number of CPUs on your machine.
+Add media.
+```
+./manage.py add_media --audio-dir ~/Music --video-dir ~/Videos/ --skip-existing-paths
+```
+Start stream backend.
+```
+// Start stream_backend 127.0.0.1:8080
+cd stream_backend
+cargo run --release
+```
 ## Screenshots
 ### Audio / Radio
 ![alt text](images/image.png)

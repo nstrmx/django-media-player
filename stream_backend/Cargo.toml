@@ -1,0 +1,20 @@
+[package]
+name = "stream_backend"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-web = "*"
+actix-files = "*"
+tokio = { version = "*", features = ["full"] }
+tokio-rustls = "*"
+rustls-pki-types = "*"
+sqlx = { version = "*", features = ["runtime-tokio-native-tls", "sqlite", "macros"] }
+serde = { version = "*", features = ["derive"] }
+serde_json = "*"
+mime = "*"
+futures = "*"
+url = "*"
+async-stream = "*"
+bytes = "*"
+webpki-roots = "*" 

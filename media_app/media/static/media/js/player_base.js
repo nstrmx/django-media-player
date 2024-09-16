@@ -147,7 +147,7 @@ class MediaPlayer {
     }
 
     play(id) {
-        this.$controller.attr("src", `${global.urls.file_stream}?id=${id}&type=${this.media_type}`);
+        this.$controller.attr("src", `${global.urls.file_stream}?id=${id}&media_type=${this.media_type}`);
         this.state.id = id;
         const interval = setInterval(() => {
             if (this.controller.paused) {
