@@ -5,6 +5,15 @@ from multiprocessing import Process, RLock, cpu_count, Queue
 from django.core.management.base import BaseCommand, CommandParser
 from media.models import Audio, Video
 
+import ffmpeg
+
+from datetime import timedelta
+
+def get_video_duration(path):
+    probe = ffmpeg.probe(path)
+    duration = float(probe['format']['duration'])
+    return duration  # in seconds
+
 
 class Command(BaseCommand):
     help = "Add media from your media directory"
@@ -83,11 +92,19 @@ class Command(BaseCommand):
                 md5_buf.update(chunk)
                 chunk = file.read(self.chunk_size)
         md5_hex = md5_buf.hexdigest()
+        duration=round(get_video_duration(file_path),0)
+
+        duration=timedelta(seconds=duration)
+
+       
+      
         media = media_class(
             title=file_path.stem,
             path=str(file_path),
             md5_hex=md5_hex,
             file_size=file_path.stat().st_size,
+            duration=duration
+            
         )
         with self.lock:
             try:
