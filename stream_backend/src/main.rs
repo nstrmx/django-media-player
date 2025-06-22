@@ -53,6 +53,7 @@ async fn media_view(
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    let url = std::env::args().nth(1).expect("url argument required (example: 127.0.0.1:8081)");
     let db_pool = SqlitePool::connect("sqlite:../db.sqlite3").await
         .expect("Failed to connect to the database");
     HttpServer::new(move || {
@@ -60,7 +61,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(db_pool.to_owned()))
             .service(media_view)
     })
-    .bind("127.0.0.1:8080")?
+    .bind(url)?
     .run()
     .await
 }

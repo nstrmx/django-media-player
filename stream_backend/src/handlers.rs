@@ -45,7 +45,7 @@ pub struct FileStream {
 impl FileStream {
     pub async  fn new(file_path: PathBuf) -> Result<Self> {
         let file = actix_files::NamedFile::open_async(file_path).await?;
-        return Ok(Self {file});
+        Ok(Self {file})
     }
 }
 
@@ -107,13 +107,13 @@ impl HttpStream {
         let path = parsed_url.path().to_string();
         let mut tcp_stream: Box<dyn AsyncReadWrite + Unpin + Send> = match parsed_url.scheme() {
             "http" => {
-                let port = parsed_url.port().unwrap_or_else(|| 80);
+                let port = parsed_url.port().unwrap_or(80);
                 let addr = format!("{}:{}", host, port);
                 let tcp_stream = TcpStream::connect(addr).await?;
                 Box::new(tcp_stream)
             },
             "https" => {
-                let port = parsed_url.port().unwrap_or_else(|| 443);
+                let port = parsed_url.port().unwrap_or(443);
                 let addr = format!("{}:{}", host, port);
                 let tcp_stream = TcpStream::connect(addr).await?;
                 let mut root_cert_store = RootCertStore::empty();

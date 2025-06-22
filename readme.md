@@ -17,9 +17,9 @@ Add media.
 ```
 Start stream backend.
 ```
-// Start stream_backend 127.0.0.1:8080
+// Start stream_backend
 cd stream_backend
-cargo run --release
+cargo run --release -- 127.0.0.1:8080
 ```
 ## Screenshots
 ### Audio / Radio
