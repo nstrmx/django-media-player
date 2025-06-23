@@ -13,7 +13,7 @@ source .venv/bin/activate
 ```
 Add media.
 ```
-./manage.py add_media --audio-dir ~/Music --video-dir ~/Videos/ --skip-existing-paths
+./manage.py add_media --skip-existing-paths ~/Music ~/Videos/ ~/Downloads/*.mp3
 ```
 Start stream backend.
 ```
