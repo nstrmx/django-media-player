@@ -4,7 +4,7 @@ from django import forms
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.db.models import Q
-from media.models import Audio, Radio, Tag, Video
+from media.models import Audio, Radio, Tag, Video, Author
 
 
 class TagsFilter(admin.RelatedFieldListFilter):
@@ -29,6 +29,12 @@ class TagsFilter(admin.RelatedFieldListFilter):
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
+    list_display = ("title", "updated")
+    list_filter = ("updated",)
+
+
+@admin.register(Author)
+class AuthorAdmin(admin.ModelAdmin):
     list_display = ("title", "updated")
     list_filter = ("updated",)
 
@@ -83,6 +89,9 @@ class MediaAdmin(admin.ModelAdmin):
     
     def get_tags(self, audio):
         return ", ".join(t.title for t in audio.tags.all())
+
+    def get_authors(self, audio):
+        return ", ".join(a.title for a in audio.authors.all())
     
     def play(self, audio):
         return get_play_button(audio.id)
@@ -93,7 +102,7 @@ class AudioAdmin(MediaAdmin):
     change_list_template = "media/admin/audio_change_list.html"
     change_form_template = "media/admin/audio_change_form.html"
     model = Audio
-    list_display = ("title", "play", "duration", "get_tags", "updated", "get_file_size")
+    list_display = ("title", "play", "duration", "get_tags", "get_authors", "updated", "get_file_size")
     readonly_fields = ("duration", "file_size", "md5_hex", "updated")
 
     def get_file_size(self, audio):

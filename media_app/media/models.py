@@ -21,6 +21,21 @@ class Tag(models.Model):
     def __repr__(self):
         return f"<{self.__class__.__name__} pk={self.pk} title=\"{self.title[:50]}>\""
 
+class Author(models.Model):
+    class Meta:
+        ordering = ("title",)
+
+    created = models.DateTimeField(auto_now_add=True, editable=False)
+    updated = models.DateTimeField(auto_now=True)
+    title = models.CharField(max_length=200, blank=False, null=False)
+    description = models.TextField(blank=True, null=False, default="")
+
+    def __str__(self):
+        return self.title
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__} pk={self.pk} title=\"{self.title[:50]}>\""
+
 
 class Media(models.Model):
     chunk_size = 1024 * 10
@@ -55,6 +70,7 @@ class Audio(Media):
     file_size = models.IntegerField(blank=False, null=False, default=0)
     md5_hex = models.CharField(max_length=200, blank=False, null=False, unique=True)
     duration = models.DurationField(blank=False, null=False, default=timedelta(seconds=0))
+    authors = models.ManyToManyField(Author)
     
     def get_processed_path(self):
         if self.path.startswith("file://"):
