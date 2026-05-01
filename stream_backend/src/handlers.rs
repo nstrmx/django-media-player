@@ -88,8 +88,8 @@ pub struct HttpStream {
 impl HttpStream {
     pub async fn new(url: &str, chunk_size: usize) -> Result<Self> {
         let mut input_stream = Self::stream_url(url).await?;
+        let mut buffer = vec![0; chunk_size];
         let output_stream = async_stream::stream! {
-            let mut buffer = vec![0; chunk_size];
             while let Some(chunk) = match input_stream.read(&mut buffer).await {
                 Ok(0) => None, // End of stream
                 Ok(n) => Some(Ok(Bytes::from(buffer[..n].to_owned()))),
