@@ -40,7 +40,7 @@ class AuthorAdmin(admin.ModelAdmin):
 
 
 def get_play_button(media_id):
-    return mark_safe(f"""<button type="button" data-id="{media_id}">play</button>""")
+    return mark_safe(f"""<button type="button" data-id="{media_id}">▶</button>""")
 
 
 class PlayWidget(forms.Widget):

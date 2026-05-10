@@ -28,3 +28,6 @@
 #result_list .column-play {
     min-width: 70px;
 }
+#result_list .field-play > button {
+    width: 30px;
+}

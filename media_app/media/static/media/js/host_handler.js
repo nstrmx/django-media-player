@@ -14,7 +14,6 @@ const handler = {
                 state.player_responded = true;
             }
             if (e.data.action === "ready") {
-                // Popup is ready, trigger any pending play
                 if (state.pending_play) {
                     handler.play_media(state.pending_play);
                     state.pending_play = null;
@@ -58,24 +57,24 @@ const handler = {
     },
 
     highlight_playing: function(media) {
-        $("#result_list tr button").text("play");
+        $("#result_list tr button").text("▶");
         $("#result_list tr.playing").removeClass("playing");
         $("#result_list tr.paused").removeClass("paused");
         const $button = $(`.field-play button[data-id="${media.id}"]`).first();
         if ($button.length) {
-            $button.text("pause");
+            $button.text("⏸");
             const $row = $button.parents("tr").first();
             $row.addClass("playing");
         }
     },
 
     highlight_paused: function(media) {
-        $("#result_list tr button").text("play");
+        $("#result_list tr button").text("▶");
         $("#result_list tr.playing").removeClass("playing");
         $("#result_list tr.paused").removeClass("paused");
         const $button = $(`.field-play button[data-id="${media.id}"]`).first();
         if ($button.length) {
-            $button.text("play");
+            $button.text("▶");
             const $row = $button.parents("tr").first();
             $row.addClass("paused");
         }
@@ -85,7 +84,6 @@ const handler = {
 $(window).on("load", e => {
     handler.connect_to_channel();
     state.playlist = handler.load_playlist();
-    // Request current status
     state.channel.postMessage({action: "status_request"});
 });
 
@@ -97,7 +95,7 @@ $(document).on("click", ".field-play button", e => {
         desc: $item.parents("tr").find(".field-title a").first().text(),
     };
 
-    if ($item.text() === "pause") {
+    if ($item.text() === "⏸") {
         state.channel.postMessage({
             action: "pause",
             media_id: media.id,
