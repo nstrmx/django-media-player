@@ -26,6 +26,18 @@ $(window).on("load", e => {
             return;
         }
 
+        if (e.data.action === "pause") {
+            if (state.player && state.player.is_current_id(e.data.media_id)) {
+                state.player.pause();
+                state.channel.postMessage({
+                    action: "paused",
+                    media: { type: state.media_type, id: e.data.media_id }
+                });
+                if (state.playing_interval) clearInterval(state.playing_interval);
+            }
+            return;
+        }
+
         if (e.data.action === "play") {
             state.media_type = e.data.media_type;
             if (!state.player || state.player.media_type !== e.data.media_type) {

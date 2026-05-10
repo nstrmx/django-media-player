@@ -7,6 +7,7 @@ class MediaPlayer {
             id: null,
             repeat_idx: 1,
             playlist: playlist,
+            play_interval: null,
         };
         this.mount();
         this.controller.volume = window.localStorage.getItem("player_vol") / 100;
@@ -147,18 +148,27 @@ class MediaPlayer {
     }
 
     play(id) {
-        this.$controller.attr("src", `${global.urls.file_stream}?id=${id}&media_type=${this.media_type}`);
-        this.state.id = id;
-        const interval = setInterval(() => {
+        const is_same_media = this.state.id === id && this.$controller.attr("src");
+        if (!is_same_media) {
+            this.$controller.attr("src", `${global.urls.file_stream}?id=${id}&media_type=${this.media_type}`);
+            this.state.id = id;
+        }
+        if (this.state.play_interval) clearInterval(this.state.play_interval);
+        this.state.play_interval = setInterval(() => {
             if (this.controller.paused) {
                 this.controller.play();
             } else {
-                clearInterval(interval);
+                clearInterval(this.state.play_interval);
+                this.state.play_interval = null;
             }
         }, 1000);
     }
 
     pause() {
+        if (this.state.play_interval) {
+            clearInterval(this.state.play_interval);
+            this.state.play_interval = null;
+        }
         this.controller.pause();
     }
 

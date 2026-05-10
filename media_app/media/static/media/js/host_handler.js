@@ -25,6 +25,11 @@ const handler = {
                     handler.highlight_playing(e.data.media);
                 }
             }
+            if (e.data.action === "paused") {
+                if (e.data.media && e.data.media.type === global.media_type) {
+                    handler.highlight_paused(e.data.media);
+                }
+            }
         };
     },
 
@@ -92,21 +97,27 @@ $(document).on("click", ".field-play button", e => {
         desc: $item.parents("tr").find(".field-title a").first().text(),
     };
 
-    state.player_responded = false;
-    state.channel.postMessage({action: "ping"});
+    if ($item.text() === "pause") {
+        state.channel.postMessage({
+            action: "pause",
+            media_id: media.id,
+        });
+        state.last_media = media;
+    } else {
+        state.player_responded = false;
+        state.channel.postMessage({action: "ping"});
 
-    setTimeout(() => {
-        if (!state.player_responded) {
-            // No player exists, open one and wait for it to be ready
-            window.open(
-                global.urls.player,
-                "Django Player",
-                "allow=autoplay, toolbar=no, scrollbars=no, resizable=no"
-            );
-            state.pending_play = media;
-        } else {
-            // Player exists, send play immediately
-            handler.play_media(media);
-        }
-    }, 200);
+        setTimeout(() => {
+            if (!state.player_responded) {
+                window.open(
+                    global.urls.player,
+                    "Django Player",
+                    "allow=autoplay, toolbar=no, scrollbars=no, resizable=no"
+                );
+                state.pending_play = media;
+            } else {
+                handler.play_media(media);
+            }
+        }, 200);
+    }
 });
