@@ -47,6 +47,7 @@ class Media(models.Model):
     description = models.TextField(blank=True, null=False, default="")
     tags = models.ManyToManyField(Tag)
     play_count = models.IntegerField(blank=False, null=False, default=0)
+    visible = models.BooleanField(blank=False, null=False, default=True)
 
     class Meta:
         abstract = True

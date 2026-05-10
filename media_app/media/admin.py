@@ -7,6 +7,35 @@ from django.db.models import Q
 from media.models import Audio, Radio, Tag, Video, Author
 
 
+class VisibilityFilter(admin.SimpleListFilter):
+    title = _("visibility")
+    parameter_name = "visibility"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("all", _("All")),
+            ("visible", _("Visible")),
+            ("hidden", _("Hidden")),
+        )
+
+    def choices(self, cl):
+        for lookup, title in self.lookup_choices:
+            yield {
+                "selected": self.value() == lookup if self.value() else lookup == "visible",
+                "query_string": cl.get_query_string({self.parameter_name: lookup}, []),
+                "display": title,
+            }
+
+    def queryset(self, request, queryset):
+        if self.value() == "visible":
+            return queryset.filter(visible=True)
+        if self.value() == "hidden":
+            return queryset.filter(visible=False)
+        if self.value() == "all":
+            return queryset
+        return queryset.filter(visible=True)
+
+
 class TagsFilter(admin.RelatedFieldListFilter):
     title = _("tags")
     parameter_name = "tags"
@@ -67,9 +96,14 @@ class MediaAdmin(admin.ModelAdmin):
     change_list_template = "media/admin/media_change_list.html"
     change_form_template = "media/admin/media_change_form.html"
     form = MediaModelForm
-    list_filter = (("tags", TagsFilter),)
+    list_filter = (VisibilityFilter, ("tags", TagsFilter),)
     search_fields = ("title",)
     search_params_ptrn = re.compile(r"(@[A-z_]+:[^;]+;)")
+    actions = ("hide_selected",)
+
+    @admin.action(description="Hide selected media")
+    def hide_selected(self, request, queryset):
+        queryset.update(visible=False)
 
     def get_search_results(self, request, queryset, search_term):
         m = self.search_params_ptrn.findall(search_term)
@@ -118,7 +152,7 @@ class AudioAdmin(MediaAdmin):
             value = value / 1024
             c = "G"
         return f"{round(value, 2)} {c}b"
-    
+
 
 @admin.register(Radio)
 class RadioAdmin(MediaAdmin):
@@ -126,9 +160,9 @@ class RadioAdmin(MediaAdmin):
     change_form_template = "media/admin/radio_change_form.html"
     model = Radio
     list_display = ("title", "play", "get_tags", "quality", "updated")
-    list_filter = (("tags", TagsFilter), "quality")
+    list_filter = (VisibilityFilter, ("tags", TagsFilter), "quality")
     readonly_fields = ("updated",)
-    
+
 
 @admin.register(Video)
 class VideoAdmin(MediaAdmin):
