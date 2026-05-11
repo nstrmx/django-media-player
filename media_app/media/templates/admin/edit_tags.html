@@ -1,0 +1,65 @@
+{% extends "admin/base_site.html" %}
+{% load i18n l10n admin_urls static %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin/css/forms.css' %}">
+<script type="text/javascript" src="{% url 'admin:jsi18n' %}"></script>
+<script type="text/javascript" src="{% static 'admin/js/core.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin/js/jquery.init.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin/js/admin/RelatedObjectLookups.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin/js/cancel.js' %}"></script>
+{% endblock %}
+{% block content %}
+<div class="module delete-confirmation">
+    <form method="post" id="edit_tags_form">
+        {% csrf_token %}
+        <fieldset class="module aligned">
+            <div class="form-row">
+                <div class="related-widget-wrapper">
+                    <label for="add_tags">Add tags:</label>
+                    <select name="add_tags" id="add_tags" multiple size="5">
+                        {% for tag in tags %}
+                        <option value="{{ tag.pk }}">{{ tag.title }}</option>
+                        {% endfor %}
+                    </select>
+                    <a class="related-widget-wrapper-link add-related" id="add_id_tags" data-popup="yes" href="{% url 'admin:media_tag_add' %}?_to_field=id&_popup=1" title="Add another tag">
+                        <img src="{% static 'admin/img/icon-addlink.svg' %}" alt width="24" height="24">
+                    </a>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="related-widget-wrapper">
+                    <label for="remove_tags">Remove tags:</label>
+                    <select name="remove_tags" id="remove_tags" multiple size="5">
+                        {% for tag in tags %}
+                        <option value="{{ tag.pk }}">{{ tag.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </fieldset>
+        <input type="hidden" name="action" value="edit_tags">
+        <input type="hidden" name="apply" value="1">
+        {% for item in queryset %}
+        <input type="hidden" name="{{ action_checkbox_name }}" value="{{ item.pk }}">
+        {% endfor %}
+        <p>{{ queryset.count }} items selected</p>
+        <input type="submit" value="Proceed" class="default">
+        <a href="#" class="button cancel-link">Cancel</a>
+    </form>
+</div>
+<script>
+(function($) {
+    window.dismissAddRelatedObjectPopup = function(win, newId, newRepr) {
+        var $addSelect = $('#add_tags');
+        var $removeSelect = $('#remove_tags');
+        $addSelect.append($('<option>', { value: newId, text: newRepr }));
+        $removeSelect.append($('<option>', { value: newId, text: newRepr }));
+        $addSelect.find('option[value="' + newId + '"]').prop('selected', true);
+        win.close();
+    };
+})(django.jQuery);
+</script>
+{% endblock %}

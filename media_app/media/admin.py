@@ -1,6 +1,7 @@
 import re
 from django.contrib import admin
 from django import forms
+from django.shortcuts import render
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.db.models import Q
@@ -99,11 +100,40 @@ class MediaAdmin(admin.ModelAdmin):
     list_filter = (VisibilityFilter, ("tags", TagsFilter),)
     search_fields = ("title",)
     search_params_ptrn = re.compile(r"(@[A-z_]+:[^;]+;)")
-    actions = ("hide_selected",)
+    actions = ("hide_selected", "edit_tags")
 
     @admin.action(description="Hide selected media")
     def hide_selected(self, request, queryset):
         queryset.update(visible=False)
+
+    @admin.action(description="Edit tags on selected media")
+    def edit_tags(self, request, queryset):
+        if "apply" in request.POST:
+            tags_to_add = request.POST.getlist("add_tags")
+            tags_to_remove = request.POST.getlist("remove_tags")
+            if tags_to_add:
+                for tag_id in tags_to_add:
+                    tag = Tag.objects.get(pk=tag_id)
+                    for item in queryset:
+                        item.tags.add(tag)
+            if tags_to_remove:
+                for tag_id in tags_to_remove:
+                    tag = Tag.objects.get(pk=tag_id)
+                    for item in queryset:
+                        item.tags.remove(tag)
+            self.message_user(request, f"Updated tags on {queryset.count()} items.")
+            return None
+        tags = Tag.objects.all().order_by("title")
+        return render(
+            request,
+            "admin/edit_tags.html",
+            {
+                "title": "Edit tags on selected media",
+                "queryset": queryset,
+                "action_checkbox_name": admin.helpers.ACTION_CHECKBOX_NAME,
+                "tags": tags,
+            },
+        )
 
     def get_search_results(self, request, queryset, search_term):
         m = self.search_params_ptrn.findall(search_term)

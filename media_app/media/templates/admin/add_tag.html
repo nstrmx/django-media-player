@@ -1,0 +1,30 @@
+{% extends "admin/base.html" %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+{% block branding %}
+<h1 id="site-name">{{ title }}</h1>
+{% endblock %}
+{% block content %}
+<div class="module">
+    <h2>{{ title }}</h2>
+    <p>{{ queryset.count }} items selected</p>
+    <form method="post">
+        {% csrf_token %}
+        <select name="tag" required>
+            <option value="">-- Select a tag --</option>
+            {% for tag in tags %}
+            <option value="{{ tag.pk }}">{{ tag.title }}</option>
+            {% endfor %}
+        </select>
+        <input type="hidden" name="action" value="add_tag">
+        <input type="hidden" name="apply" value="1">
+        {% for item in queryset %}
+        <input type="hidden" name="{{ action_checkbox_name }}" value="{{ item.pk }}">
+        {% endfor %}
+        <div class="submit-row">
+            <input type="submit" value="Proceed" class="default">
+            <button type="button" onclick="history.back()" class="cancel-link">Cancel</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
