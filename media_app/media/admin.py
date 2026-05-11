@@ -5,68 +5,42 @@ from django.shortcuts import render
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.db.models import Q
-from django.http import JsonResponse
-from django.contrib.auth.models import User
-from django.views import View
-from django.db import models
 from media.models import Audio, Radio, Tag, Video, Author
-import json
-
-class TagFilterPreset(models.Model):
-    MEDIA_TYPE_CHOICES = [
-        ('audio', 'Audio'),
-        ('radio', 'Radio'),
-        ('video', 'Video'),
-    ]
-    name = models.CharField(max_length=100)
-    state = models.JSONField(default=list)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    media_type = models.CharField(max_length=20, choices=MEDIA_TYPE_CHOICES)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ('name', 'user', 'media_type')
-
-    def __str__(self):
-        return self.name
+from media.admin_filters import FilterPresetBase, M2MFilterBase, FilterPresetViewBase
 
 
-class TagFilterPresetView(View):
-    def get(self, request, preset_id=None):
-        media_type = request.GET.get('media_type', 'audio')
-        if request.GET.get('_popup'):
-            presets = list(TagFilterPreset.objects.filter(user=request.user, media_type=media_type).values('id', 'name', 'state', 'created_at'))
-            for p in presets:
-                p['state_json'] = json.dumps(p.pop('state'))
-            return render(request, 'admin/tag_filter_preset_popup.html', {'presets': presets, 'media_type': media_type})
-        presets = TagFilterPreset.objects.filter(user=request.user, media_type=media_type).values('id', 'name', 'state', 'created_at')
-        return JsonResponse(list(presets), safe=False)
+class TagFilterPreset(FilterPresetBase):
+    pass
 
-    def post(self, request):
-        try:
-            data = json.loads(request.body)
-            name = data.get('name')
-            state = data.get('state', [])
-            media_type = data.get('media_type', 'audio')
-            if not name:
-                return JsonResponse({'error': 'Name is required'}, status=400)
-            preset = TagFilterPreset.objects.create(name=name, state=state, user=request.user, media_type=media_type)
-            return JsonResponse({'id': preset.id, 'name': preset.name, 'state': preset.state, 'created_at': preset.created_at.isoformat()}, status=201)
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
-    def delete(self, request, preset_id):
-        try:
-            preset = TagFilterPreset.objects.get(id=preset_id, user=request.user)
-            preset.delete()
-            return JsonResponse({'status': 'deleted'})
-        except TagFilterPreset.DoesNotExist:
-            return JsonResponse({'error': 'Not found'}, status=404)
+class AuthorFilterPreset(FilterPresetBase):
+    pass
+
+
+class TagFilterPresetView(FilterPresetViewBase):
+    filter_preset_model = TagFilterPreset
+    template_name = 'admin/tag_filter_preset_popup.html'
+    preset_name = 'tag'
+
+
+class AuthorFilterPresetView(FilterPresetViewBase):
+    filter_preset_model = AuthorFilterPreset
+    template_name = 'admin/author_filter_preset_popup.html'
+    preset_name = 'author'
+
+
+class TagFilterPresetAdmin(admin.ModelAdmin):
+    list_display = ('name', 'user', 'media_type', 'created_at')
 
 
 @admin.register(TagFilterPreset)
-class TagFilterPresetAdmin(admin.ModelAdmin):
-    list_display = ('name', 'user', 'created_at')
+class TagFilterPresetAdminRegistered(admin.ModelAdmin):
+    list_display = ('name', 'user', 'media_type', 'created_at')
+
+
+@admin.register(AuthorFilterPreset)
+class AuthorFilterPresetAdminRegistered(admin.ModelAdmin):
+    list_display = ('name', 'user', 'media_type', 'created_at')
 
 
 class VisibilityFilter(admin.SimpleListFilter):
@@ -98,68 +72,16 @@ class VisibilityFilter(admin.SimpleListFilter):
         return queryset.filter(visible=True)
 
 
-class TagsFilter(admin.RelatedFieldListFilter):
+class TagsFilter(M2MFilterBase):
     title = _("tags")
-    parameter_name = "tags"
-    template = "admin/tags_filter.html"
+    filter_prefix = 'tag'
+    filter_model = Tag
 
-    @property
-    def include_empty_choice(self):
-        return False
 
-    def field_choices(self, field, request, model_admin):
-        tag_set = set()
-        qs = model_admin.get_queryset(request)
-        for item in qs:
-            if item.tags.count() > 0:
-                for v in item.tags.values_list("id", "title"):
-                    tag_set.add(v)
-        return sorted(tag_set, key=lambda it: it[1])
-
-    def choices(self, changelist):
-        tag_counts = {}
-        qs = changelist.queryset
-        for item in qs:
-            for tag in item.tags.all():
-                tag_counts[tag.id] = tag_counts.get(tag.id, 0) + 1
-
-        self.filter_media_type = self.field.model._meta.model_name
-        selected_ids = set(self.request.GET.getlist('tags'))
-        for pk_val, display in self.lookup_choices:
-            selected = str(pk_val) in selected_ids
-            query_string = changelist.get_query_string({self.lookup_kwarg: pk_val})
-            yield {
-                "pk": pk_val,
-                "selected": selected,
-                "query_string": query_string,
-                "display": display,
-                "has_media": pk_val in tag_counts,
-            }
-
-    def queryset(self, request, queryset):
-        tags_or = request.GET.getlist('tags')
-        tags_and = request.GET.getlist('tags_and')
-        tags_not = request.GET.getlist('tags_not')
-
-        if tags_or:
-            from django.db.models import Q
-            q = Q()
-            for tag_id in tags_or:
-                q |= Q(tags=tag_id)
-            queryset = queryset.filter(q)
-
-        if tags_and:
-            for tag_id in tags_and:
-                queryset = queryset.filter(tags=tag_id)
-
-        if tags_not:
-            for tag_id in tags_not:
-                queryset = queryset.exclude(tags=tag_id)
-
-        return queryset
-
-    def expected_parameters(self):
-        return ['tags', 'tags_and', 'tags_not']
+class AuthorsFilter(M2MFilterBase):
+    title = _("authors")
+    filter_prefix = 'author'
+    filter_model = Author
 
 
 @admin.register(Tag)
@@ -202,7 +124,7 @@ class MediaAdmin(admin.ModelAdmin):
     change_list_template = "media/admin/media_change_list.html"
     change_form_template = "media/admin/media_change_form.html"
     form = MediaModelForm
-    list_filter = (VisibilityFilter, ("tags", TagsFilter),)
+    list_filter = (VisibilityFilter, ("tags", TagsFilter))
     search_fields = ("title",)
     search_params_ptrn = re.compile(r"(@[A-z_]+:[^;]+;)")
     actions = ("hide_selected", "edit_tags")
@@ -241,19 +163,33 @@ class MediaAdmin(admin.ModelAdmin):
         )
 
     def get_search_results(self, request, queryset, search_term):
-        m = self.search_params_ptrn.findall(search_term)
+        m, n = set(), []
+        for it in self.search_params_ptrn.findall(search_term):
+            name, query = it.lstrip("@").rstrip(";").split(":", 1)
+            if name == "tag":
+                tag_list = [p.strip() for p in query.split(",")]
+                tags = Tag.objects.filter(title__in=tag_list)
+                for tag in tags:
+                    n.append(tag)
+            elif name == "author":
+                author_list = [p.strip() for p in query.split(",")]
+                authors = Author.objects.filter(title__in=author_list)
+                for author in authors:
+                    m.add(author.pk)
         q = Q()
-        if len(m) > 0:
-            for it in m:
-                search_term = search_term.replace(it, "")
-                name, query = it.lstrip("@").rstrip(";").split(":", 1)
-                if name == "tags":
-                    title_list = [p.strip() for p in query.split(",")]
-                    tags = Tag.objects.filter(title__in=title_list)
-                    for tag in tags:
-                        q |= Q(tags__in=[tag])
+        for it in self.search_params_ptrn.findall(search_term):
+            name, query = it.lstrip("@").rstrip(";").split(":", 1)
+            if name == "tags":
+                title_list = [p.strip() for p in query.split(",")]
+                tags = Tag.objects.filter(title__in=title_list)
+                for tag in tags:
+                    q |= Q(tags__in=[tag])
         queryset, use_distinct = super().get_search_results(request, queryset, search_term)
         queryset = queryset.filter(q)
+        if m:
+            queryset = queryset.filter(authors__in=m)
+        if n:
+            queryset = queryset.filter(tags__in=n)
         return queryset, use_distinct
     
     def get_tags(self, audio):
@@ -271,22 +207,9 @@ class AudioAdmin(MediaAdmin):
     change_list_template = "media/admin/audio_change_list.html"
     change_form_template = "media/admin/audio_change_form.html"
     model = Audio
-    list_display = ("title", "play", "duration", "get_tags", "get_authors", "updated", "get_file_size")
+    list_display = ("title", "play", "get_tags", "get_authors", "duration", "file_size", "updated")
+    list_filter = (VisibilityFilter, ("tags", TagsFilter), ("authors", AuthorsFilter))
     readonly_fields = ("duration", "file_size", "md5_hex", "updated")
-
-    def get_file_size(self, audio):
-        value = audio.file_size
-        c = ""
-        if value > 1024:
-            value = value / 1024
-            c = "K"
-        if value > 1024:
-            value = value / 1024
-            c = "M"
-        if value > 1024:
-            value = value / 1024
-            c = "G"
-        return f"{round(value, 2)} {c}b"
 
 
 @admin.register(Radio)
@@ -304,7 +227,8 @@ class VideoAdmin(MediaAdmin):
     change_list_template = "media/admin/video_change_list.html"
     change_form_template = "media/admin/video_change_form.html"
     model = Video
-    list_display = ("title", "play", "duration", "get_tags", "updated", "get_file_size")
+    list_display = ("title", "play", "get_tags", "duration", "get_file_size", "updated")
+    list_filter = (VisibilityFilter, ("tags", TagsFilter))
     readonly_fields = ("duration", "file_size", "md5_hex", "updated")
 
     def get_file_size(self, audio):

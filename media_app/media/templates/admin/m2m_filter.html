@@ -3,77 +3,77 @@
   <summary>
     {% blocktranslate with filter_title=title %} By {{ filter_title }} {% endblocktranslate %}
   </summary>
-  <form class="tags-filter-form">
-    <input type="search" class="tags-filter-search" placeholder="{% translate 'Filter tags…' %}" aria-label="{% translate 'Filter tags' %}">
-    <div class="tags-filter-scroll">
-    <table class="tags-filter-table">
+  <form class="{{ spec.filter_prefix }}-filter-form">
+    <input type="search" class="{{ spec.filter_prefix }}-filter-search" placeholder="{% translate 'Filter' %} {{ title }}…" aria-label="{% translate 'Filter' %} {{ title }}">
+    <div class="{{ spec.filter_prefix }}-filter-scroll">
+    <table class="{{ spec.filter_prefix }}-filter-table">
       <tr>
         <th>OR</th>
         <th>AND</th>
         <th>NOT</th>
-        <th>Tag</th>
+        <th>{{ spec.label }}</th>
       </tr>
       {% for choice in choices %}
       <tr>
         <td>
-          <label class="tags-filter-cell">
-            <input type="checkbox" class="tags-or" value="{{ choice.pk }}">
+          <label class="{{ spec.filter_prefix }}-filter-cell">
+            <input type="checkbox" class="{{ spec.filter_prefix }}-or" value="{{ choice.pk }}">
           </label>
         </td>
         <td>
-          <label class="tags-filter-cell">
-            <input type="checkbox" class="tags-and" value="{{ choice.pk }}" data-has-media="{{ choice.has_media|yesno:'true,false' }}">
+          <label class="{{ spec.filter_prefix }}-filter-cell">
+            <input type="checkbox" class="{{ spec.filter_prefix }}-and" value="{{ choice.pk }}" data-has-media="{{ choice.has_media|yesno:'true,false' }}">
           </label>
         </td>
         <td>
-          <label class="tags-filter-cell">
-            <input type="checkbox" class="tags-not" value="{{ choice.pk }}">
+          <label class="{{ spec.filter_prefix }}-filter-cell">
+            <input type="checkbox" class="{{ spec.filter_prefix }}-not" value="{{ choice.pk }}">
           </label>
         </td>
         <td>
-          {{ choice.display }}
+          <a href="?{{ spec.filter_prefix }}s={{ choice.pk }}">{{ choice.display }}</a>
         </td>
       </tr>
       {% endfor %}
     </table>
     </div>
-    <div class="tags-filter-actions">
-      <button type="button" class="tags-filter-apply">{% translate "Apply" %}</button>
-      <button type="button" class="tags-filter-clear">{% translate "Clear" %}</button>
-      <button type="button" class="tags-filter-save-preset">{% translate "Save" %}</button>
-      <button type="button" class="tags-filter-load-preset">{% translate "Load" %}</button>
+    <div class="{{ spec.filter_prefix }}-filter-actions">
+      <button type="button" class="{{ spec.filter_prefix }}-filter-apply">{% translate "Apply" %}</button>
+      <button type="button" class="{{ spec.filter_prefix }}-filter-clear">{% translate "Clear" %}</button>
+      <button type="button" class="{{ spec.filter_prefix }}-filter-save-preset">{% translate "Save" %}</button>
+      <button type="button" class="{{ spec.filter_prefix }}-filter-load-preset">{% translate "Load" %}</button>
     </div>
   </form>
 </details>
 <style>
-.tags-filter-table {
+.{{ spec.filter_prefix }}-filter-table {
   width: 100%;
   border-collapse: collapse;
 }
-.tags-filter-table th {
+.{{ spec.filter_prefix }}-filter-table th {
   text-align: left;
   padding: 2px 4px;
   font-size: 0.9em;
   color: #666;
 }
-.tags-filter-table td {
+.{{ spec.filter_prefix }}-filter-table td {
   vertical-align: top;
   padding: 0 4px;
 }
-.tags-filter-cell {
+.{{ spec.filter_prefix }}-filter-cell {
   display: block;
   padding: 1px 0;
   cursor: pointer;
 }
-.tags-filter-cell input {
+.{{ spec.filter_prefix }}-filter-cell input {
   margin-right: 4px;
 }
-.tags-filter-actions {
+.{{ spec.filter_prefix }}-filter-actions {
   margin-top: 8px;
   display: flex;
   gap: 8px;
 }
-.tags-filter-search {
+.{{ spec.filter_prefix }}-filter-search {
   width: 100%;
   padding: 4px 8px;
   margin-bottom: 8px;
@@ -82,38 +82,42 @@
   background-color: var(--darkened-bg);
   color: var(--body-fg);
 }
-.tags-filter-scroll {
+.{{ spec.filter_prefix }}-filter-scroll {
   max-height: 300px;
   overflow-y: auto;
 }
-.tags-filter-scroll table {
+.{{ spec.filter_prefix }}-filter-scroll table {
   margin: 0;
 }
-.tags-filter-scroll thead th {
+.{{ spec.filter_prefix }}-filter-scroll thead th {
   position: sticky;
   top: 0;
   background: #f6f6f6;
   z-index: 1;
 }
-.tags-filter-scroll tr.hidden {
-   display: none;
- }
- .tags-filter-form {
-   position: relative;
-   padding: 15px;
- }
+.{{ spec.filter_prefix }}-filter-scroll tr.hidden {
+  display: none;
+}
+.{{ spec.filter_prefix }}-filter-form {
+  position: relative;
+  padding: 15px;
+}
+.{{ spec.filter_prefix }}-filter-scroll tr[data-query-or] {
+  cursor: pointer;
+}
 </style>
 <script>
 (function() {
+  var prefix = '{{ spec.filter_prefix }}';
   var details = document.querySelector('[data-filter-title="{{ title }}"]');
   if (!details) return;
 
-  var form = details.querySelector('.tags-filter-form');
-  var applyBtn = details.querySelector('.tags-filter-apply');
-  var clearBtn = details.querySelector('.tags-filter-clear');
-  var searchInput = details.querySelector('.tags-filter-search');
-  var savePresetBtn = details.querySelector('.tags-filter-save-preset');
-  var loadPresetBtn = details.querySelector('.tags-filter-load-preset');
+  var form = details.querySelector('.' + prefix + '-filter-form');
+  var applyBtn = details.querySelector('.' + prefix + '-filter-apply');
+  var clearBtn = details.querySelector('.' + prefix + '-filter-clear');
+  var searchInput = details.querySelector('.' + prefix + '-filter-search');
+  var savePresetBtn = details.querySelector('.' + prefix + '-filter-save-preset');
+  var loadPresetBtn = details.querySelector('.' + prefix + '-filter-load-preset');
 
   function getParams() {
     return new URLSearchParams(window.location.search);
@@ -121,22 +125,22 @@
 
   function getClearParams() {
     var params = getParams();
-    params.delete('tags');
-    params.delete('tags_and');
-    params.delete('tags_not');
+    params.delete(prefix + 's');
+    params.delete(prefix + 's_and');
+    params.delete(prefix + 's_not');
     return params.toString();
   }
 
   function disableCheckboxesWithoutMedia() {
-    details.querySelectorAll('.tags-or, .tags-and').forEach(function(cb) {
+    details.querySelectorAll('.' + prefix + '-or, .' + prefix + '-and').forEach(function(cb) {
       if (cb.dataset.hasMedia === 'false') {
         cb.disabled = true;
       }
     });
   }
 
-  function filterTags(query) {
-    var rows = details.querySelectorAll('.tags-filter-table tr');
+  function filterItems(query) {
+    var rows = details.querySelectorAll('.' + prefix + '-filter-table tr');
     rows.forEach(function(row) {
       var label = row.querySelector('td:last-child');
       if (!label) return;
@@ -150,18 +154,18 @@
   }
 
   searchInput.addEventListener('input', function(e) {
-    filterTags(e.target.value);
+    filterItems(e.target.value);
   });
 
   function getCurrentState() {
     var state = [];
-    details.querySelectorAll('.tags-or:checked').forEach(function(cb) {
+    details.querySelectorAll('.' + prefix + '-or:checked').forEach(function(cb) {
       state.push({t: 0, id: parseInt(cb.value)});
     });
-    details.querySelectorAll('.tags-and:checked').forEach(function(cb) {
+    details.querySelectorAll('.' + prefix + '-and:checked').forEach(function(cb) {
       state.push({t: 1, id: parseInt(cb.value)});
     });
-    details.querySelectorAll('.tags-not:checked').forEach(function(cb) {
+    details.querySelectorAll('.' + prefix + '-not:checked').forEach(function(cb) {
       state.push({t: 2, id: parseInt(cb.value)});
     });
     return state;
@@ -175,7 +179,7 @@
       cb.disabled = false;
     });
     state.forEach(function(item) {
-      var cb = details.querySelector('.tags-' + (item.t === 0 ? 'or' : item.t === 1 ? 'and' : 'not') + '[value="' + item.id + '"]');
+      var cb = details.querySelector('.' + prefix + '-' + (item.t === 0 ? 'or' : item.t === 1 ? 'and' : 'not') + '[value="' + item.id + '"]');
       if (cb && !cb.disabled) {
         cb.checked = true;
         cb.dispatchEvent(new Event('change'));
@@ -184,17 +188,17 @@
     applyBtn.click();
   }
 
-  window.loadTagFilterPreset = loadPreset;
+  window['load{{ spec.filter_prefix|capfirst }}FilterPreset'] = loadPreset;
 
   loadPresetBtn.addEventListener('click', function() {
-    var url = '/admin/api/tag-filter-presets/?_popup=1&media_type=' + mediaType;
-    window.open(url, 'tag_filter_preset', 'height=400,width=600,resizable=yes,scrollbars=yes');
+    var url = '/admin/api/{{ spec.filter_prefix }}-filter-presets/?_popup=1&media_type=' + mediaType;
+    window.open(url, '{{ spec.filter_prefix }}_filter_preset', 'height=400,width=600,resizable=yes,scrollbars=yes');
   });
 
   savePresetBtn.addEventListener('click', function() {
     var name = prompt('Enter preset name:');
     if (!name) return;
-    csrfFetch('/admin/api/tag-filter-presets/', {
+    csrfFetch('/admin/api/{{ spec.filter_prefix }}-filter-presets/', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({name: name, state: getCurrentState(), media_type: mediaType})
@@ -225,15 +229,15 @@
 
   function syncCheckboxesFromUrl() {
     var params = getParams();
-    var orTags = params.getAll('tags');
-    var andTags = params.getAll('tags_and');
-    var notTags = params.getAll('tags_not');
+    var orItems = params.getAll(prefix + 's');
+    var andItems = params.getAll(prefix + 's_and');
+    var notItems = params.getAll(prefix + 's_not');
     
-    details.querySelectorAll('.tags-or').forEach(function(cb) {
-      cb.checked = orTags.indexOf(cb.value) !== -1;
+    details.querySelectorAll('.' + prefix + '-or').forEach(function(cb) {
+      cb.checked = orItems.indexOf(cb.value) !== -1;
       var row = cb.closest('tr');
-      var notCb = row.querySelector('.tags-not');
-      var andCb = row.querySelector('.tags-and');
+      var notCb = row.querySelector('.' + prefix + '-not');
+      var andCb = row.querySelector('.' + prefix + '-and');
       if (cb.checked) {
         notCb.checked = false;
         notCb.disabled = true;
@@ -241,11 +245,11 @@
         notCb.disabled = false;
       }
     });
-    details.querySelectorAll('.tags-and').forEach(function(cb) {
-      cb.checked = andTags.indexOf(cb.value) !== -1;
+    details.querySelectorAll('.' + prefix + '-and').forEach(function(cb) {
+      cb.checked = andItems.indexOf(cb.value) !== -1;
       var row = cb.closest('tr');
-      var notCb = row.querySelector('.tags-not');
-      var orCb = row.querySelector('.tags-or');
+      var notCb = row.querySelector('.' + prefix + '-not');
+      var orCb = row.querySelector('.' + prefix + '-or');
       if (cb.checked) {
         notCb.checked = false;
         notCb.disabled = true;
@@ -253,11 +257,11 @@
         notCb.disabled = false;
       }
     });
-    details.querySelectorAll('.tags-not').forEach(function(cb) {
-      cb.checked = notTags.indexOf(cb.value) !== -1;
+    details.querySelectorAll('.' + prefix + '-not').forEach(function(cb) {
+      cb.checked = notItems.indexOf(cb.value) !== -1;
       var row = cb.closest('tr');
-      var andCb = row.querySelector('.tags-and');
-      var orCb = row.querySelector('.tags-or');
+      var andCb = row.querySelector('.' + prefix + '-and');
+      var orCb = row.querySelector('.' + prefix + '-or');
       if (cb.checked) {
         andCb.checked = false;
         andCb.disabled = true;
@@ -271,10 +275,10 @@
   }
 
   function handleNotCheckboxChange(e) {
-    if (!e.target.classList.contains('tags-not')) return;
+    if (!e.target.classList.contains(prefix + '-not')) return;
     var row = e.target.closest('tr');
-    var andCb = row.querySelector('.tags-and');
-    var orCb = row.querySelector('.tags-or');
+    var andCb = row.querySelector('.' + prefix + '-and');
+    var orCb = row.querySelector('.' + prefix + '-or');
     if (e.target.checked) {
       andCb.checked = false;
       andCb.disabled = true;
@@ -287,10 +291,10 @@
   }
 
   function handleAndCheckboxChange(e) {
-    if (!e.target.classList.contains('tags-and')) return;
+    if (!e.target.classList.contains(prefix + '-and')) return;
     var row = e.target.closest('tr');
-    var notCb = row.querySelector('.tags-not');
-    var orCb = row.querySelector('.tags-or');
+    var notCb = row.querySelector('.' + prefix + '-not');
+    var orCb = row.querySelector('.' + prefix + '-or');
     if (e.target.checked) {
       notCb.checked = false;
       notCb.disabled = true;
@@ -300,10 +304,10 @@
   }
 
   function handleOrCheckboxChange(e) {
-    if (!e.target.classList.contains('tags-or')) return;
+    if (!e.target.classList.contains(prefix + '-or')) return;
     var row = e.target.closest('tr');
-    var notCb = row.querySelector('.tags-not');
-    var andCb = row.querySelector('.tags-and');
+    var notCb = row.querySelector('.' + prefix + '-not');
+    var andCb = row.querySelector('.' + prefix + '-and');
     if (e.target.checked) {
       notCb.checked = false;
       notCb.disabled = true;
@@ -322,9 +326,9 @@
   disableCheckboxesWithoutMedia();
 
   applyBtn.addEventListener('click', function() {
-    var orChecked = Array.from(details.querySelectorAll('.tags-or:checked')).map(function(cb) { return cb.value; });
-    var andChecked = Array.from(details.querySelectorAll('.tags-and:checked')).map(function(cb) { return cb.value; });
-    var notChecked = Array.from(details.querySelectorAll('.tags-not:checked')).map(function(cb) { return cb.value; });
+    var orChecked = Array.from(details.querySelectorAll('.' + prefix + '-or:checked')).map(function(cb) { return cb.value; });
+    var andChecked = Array.from(details.querySelectorAll('.' + prefix + '-and:checked')).map(function(cb) { return cb.value; });
+    var notChecked = Array.from(details.querySelectorAll('.' + prefix + '-not:checked')).map(function(cb) { return cb.value; });
 
     if (andChecked.length === 0 && orChecked.length === 0 && notChecked.length === 0) {
       window.location.search = getClearParams();
@@ -332,13 +336,13 @@
     }
 
     var params = getParams();
-    params.delete('tags');
-    params.delete('tags_and');
-    params.delete('tags_not');
+    params.delete(prefix + 's');
+    params.delete(prefix + 's_and');
+    params.delete(prefix + 's_not');
 
-    orChecked.forEach(function(v) { params.append('tags', v); });
-    andChecked.forEach(function(v) { params.append('tags_and', v); });
-    notChecked.forEach(function(v) { params.append('tags_not', v); });
+    orChecked.forEach(function(v) { params.append(prefix + 's', v); });
+    andChecked.forEach(function(v) { params.append(prefix + 's_and', v); });
+    notChecked.forEach(function(v) { params.append(prefix + 's_not', v); });
 
     window.location.search = params.toString();
   });
