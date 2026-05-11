@@ -5,7 +5,68 @@ from django.shortcuts import render
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.db.models import Q
+from django.http import JsonResponse
+from django.contrib.auth.models import User
+from django.views import View
+from django.db import models
 from media.models import Audio, Radio, Tag, Video, Author
+import json
+
+class TagFilterPreset(models.Model):
+    MEDIA_TYPE_CHOICES = [
+        ('audio', 'Audio'),
+        ('radio', 'Radio'),
+        ('video', 'Video'),
+    ]
+    name = models.CharField(max_length=100)
+    state = models.JSONField(default=list)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    media_type = models.CharField(max_length=20, choices=MEDIA_TYPE_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('name', 'user', 'media_type')
+
+    def __str__(self):
+        return self.name
+
+
+class TagFilterPresetView(View):
+    def get(self, request, preset_id=None):
+        media_type = request.GET.get('media_type', 'audio')
+        if request.GET.get('_popup'):
+            presets = list(TagFilterPreset.objects.filter(user=request.user, media_type=media_type).values('id', 'name', 'state', 'created_at'))
+            for p in presets:
+                p['state_json'] = json.dumps(p.pop('state'))
+            return render(request, 'admin/tag_filter_preset_popup.html', {'presets': presets, 'media_type': media_type})
+        presets = TagFilterPreset.objects.filter(user=request.user, media_type=media_type).values('id', 'name', 'state', 'created_at')
+        return JsonResponse(list(presets), safe=False)
+
+    def post(self, request):
+        try:
+            data = json.loads(request.body)
+            name = data.get('name')
+            state = data.get('state', [])
+            media_type = data.get('media_type', 'audio')
+            if not name:
+                return JsonResponse({'error': 'Name is required'}, status=400)
+            preset = TagFilterPreset.objects.create(name=name, state=state, user=request.user, media_type=media_type)
+            return JsonResponse({'id': preset.id, 'name': preset.name, 'state': preset.state, 'created_at': preset.created_at.isoformat()}, status=201)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    def delete(self, request, preset_id):
+        try:
+            preset = TagFilterPreset.objects.get(id=preset_id, user=request.user)
+            preset.delete()
+            return JsonResponse({'status': 'deleted'})
+        except TagFilterPreset.DoesNotExist:
+            return JsonResponse({'error': 'Not found'}, status=404)
+
+
+@admin.register(TagFilterPreset)
+class TagFilterPresetAdmin(admin.ModelAdmin):
+    list_display = ('name', 'user', 'created_at')
 
 
 class VisibilityFilter(admin.SimpleListFilter):
@@ -62,6 +123,7 @@ class TagsFilter(admin.RelatedFieldListFilter):
             for tag in item.tags.all():
                 tag_counts[tag.id] = tag_counts.get(tag.id, 0) + 1
 
+        self.filter_media_type = self.field.model._meta.model_name
         selected_ids = set(self.request.GET.getlist('tags'))
         for pk_val, display in self.lookup_choices:
             selected = str(pk_val) in selected_ids

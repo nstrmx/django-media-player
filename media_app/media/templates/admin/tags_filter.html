@@ -39,7 +39,9 @@
     </div>
     <div class="tags-filter-actions">
       <button type="button" class="tags-filter-apply">{% translate "Apply" %}</button>
-      <button type="button" class="tags-filter-clear">{% translate "Clear all" %}</button>
+      <button type="button" class="tags-filter-clear">{% translate "Clear" %}</button>
+      <button type="button" class="tags-filter-save-preset">{% translate "Save" %}</button>
+      <button type="button" class="tags-filter-load-preset">{% translate "Load" %}</button>
     </div>
   </form>
 </details>
@@ -94,11 +96,12 @@
   z-index: 1;
 }
 .tags-filter-scroll tr.hidden {
-  display: none;
-}
-.tags-filter-form {
-  padding: 15px;
-}
+   display: none;
+ }
+ .tags-filter-form {
+   position: relative;
+   padding: 15px;
+ }
 </style>
 <script>
 (function() {
@@ -109,6 +112,8 @@
   var applyBtn = details.querySelector('.tags-filter-apply');
   var clearBtn = details.querySelector('.tags-filter-clear');
   var searchInput = details.querySelector('.tags-filter-search');
+  var savePresetBtn = details.querySelector('.tags-filter-save-preset');
+  var loadPresetBtn = details.querySelector('.tags-filter-load-preset');
 
   function getParams() {
     return new URLSearchParams(window.location.search);
@@ -147,6 +152,76 @@
   searchInput.addEventListener('input', function(e) {
     filterTags(e.target.value);
   });
+
+  function getCurrentState() {
+    var state = [];
+    details.querySelectorAll('.tags-or:checked').forEach(function(cb) {
+      state.push({t: 0, id: parseInt(cb.value)});
+    });
+    details.querySelectorAll('.tags-and:checked').forEach(function(cb) {
+      state.push({t: 1, id: parseInt(cb.value)});
+    });
+    details.querySelectorAll('.tags-not:checked').forEach(function(cb) {
+      state.push({t: 2, id: parseInt(cb.value)});
+    });
+    return state;
+  }
+
+  var mediaType = '{{ spec.filter_media_type }}';
+
+  function loadPreset(state) {
+    details.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+      cb.checked = false;
+      cb.disabled = false;
+    });
+    state.forEach(function(item) {
+      var cb = details.querySelector('.tags-' + (item.t === 0 ? 'or' : item.t === 1 ? 'and' : 'not') + '[value="' + item.id + '"]');
+      if (cb && !cb.disabled) {
+        cb.checked = true;
+        cb.dispatchEvent(new Event('change'));
+      }
+    });
+    applyBtn.click();
+  }
+
+  window.loadTagFilterPreset = loadPreset;
+
+  loadPresetBtn.addEventListener('click', function() {
+    var url = '/admin/api/tag-filter-presets/?_popup=1&media_type=' + mediaType;
+    window.open(url, 'tag_filter_preset', 'height=400,width=600,resizable=yes,scrollbars=yes');
+  });
+
+  savePresetBtn.addEventListener('click', function() {
+    var name = prompt('Enter preset name:');
+    if (!name) return;
+    csrfFetch('/admin/api/tag-filter-presets/', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name: name, state: getCurrentState(), media_type: mediaType})
+    });
+  });
+
+  function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+  }
+
+  function csrfFetch(url, options) {
+    options = options || {};
+    options.headers = options.headers || {};
+    options.headers['X-CSRFToken'] = getCookie('csrftoken');
+    return fetch(url, options);
+  }
 
   function syncCheckboxesFromUrl() {
     var params = getParams();

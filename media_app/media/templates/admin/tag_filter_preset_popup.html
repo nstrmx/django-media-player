@@ -1,0 +1,64 @@
+{% extends "admin/base.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrahead %}
+{{ block.super }}
+<script type="text/javascript" src="{% url 'admin:jsi18n' %}"></script>
+<script type="text/javascript" src="{% static 'admin/js/core.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin/js/jquery.init.js' %}"></script>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label='media' %}">Media</a>
+&rsaquo; {% translate 'Load Tag Filter Preset' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="module">
+    <h2>{% translate "Load" %} {{ media_type|capfirst }} {% translate "Tag Filter Preset" %}</h2>
+    {% if presets %}
+    <form method="post">
+        {% csrf_token %}
+        <fieldset class="module aligned">
+            {% for preset in presets %}
+            <div class="form-row">
+                <label>
+                    <input type="radio" name="preset_id" value="{{ preset.id }}" data-state='{{ preset.state_json|safe }}'>
+                    {{ preset.name }}
+                </label>
+            </div>
+            {% endfor %}
+        </fieldset>
+        <div class="submit-row">
+            <input type="submit" value="{% translate 'Apply' %}" class="default">
+        </div>
+    </form>
+    {% else %}
+    <p>{% translate "No saved presets." %}</p>
+    {% endif %}
+</div>
+<script>
+(function($) {
+    $('form').on('submit', function(e) {
+        e.preventDefault();
+        var selected = $('input[name="preset_id"]:checked');
+        if (selected.length) {
+            var state = selected.data('state');
+            if (window.opener) {
+                window.opener.loadTagFilterPreset(state);
+                window.close();
+            } else {
+                window.location.href = '?tags=' + state.map(function(s) {
+                    var prefix = s.t === 0 ? 'tags' : s.t === 1 ? 'tags_and' : 'tags_not';
+                    return prefix + '=' + s.id;
+                }).join('&');
+            }
+        }
+    });
+})(django.jQuery);
+</script>
+{% endblock %}
