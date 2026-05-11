@@ -40,21 +40,64 @@ class VisibilityFilter(admin.SimpleListFilter):
 class TagsFilter(admin.RelatedFieldListFilter):
     title = _("tags")
     parameter_name = "tags"
+    template = "admin/tags_filter.html"
 
     @property
     def include_empty_choice(self):
-        return True
+        return False
 
     def field_choices(self, field, request, model_admin):
         tag_set = set()
-        qs = self.queryset(request, model_admin.get_queryset(request))
-        if qs is None:
-            return ()
+        qs = model_admin.get_queryset(request)
         for item in qs:
             if item.tags.count() > 0:
-                v = item.tags.values_list("id", "title")
-                tag_set.update(v)
+                for v in item.tags.values_list("id", "title"):
+                    tag_set.add(v)
         return sorted(tag_set, key=lambda it: it[1])
+
+    def choices(self, changelist):
+        tag_counts = {}
+        qs = changelist.queryset
+        for item in qs:
+            for tag in item.tags.all():
+                tag_counts[tag.id] = tag_counts.get(tag.id, 0) + 1
+
+        selected_ids = set(self.request.GET.getlist('tags'))
+        for pk_val, display in self.lookup_choices:
+            selected = str(pk_val) in selected_ids
+            query_string = changelist.get_query_string({self.lookup_kwarg: pk_val})
+            yield {
+                "pk": pk_val,
+                "selected": selected,
+                "query_string": query_string,
+                "display": display,
+                "has_media": pk_val in tag_counts,
+            }
+
+    def queryset(self, request, queryset):
+        tags_or = request.GET.getlist('tags')
+        tags_and = request.GET.getlist('tags_and')
+        tags_not = request.GET.getlist('tags_not')
+
+        if tags_or:
+            from django.db.models import Q
+            q = Q()
+            for tag_id in tags_or:
+                q |= Q(tags=tag_id)
+            queryset = queryset.filter(q)
+
+        if tags_and:
+            for tag_id in tags_and:
+                queryset = queryset.filter(tags=tag_id)
+
+        if tags_not:
+            for tag_id in tags_not:
+                queryset = queryset.exclude(tags=tag_id)
+
+        return queryset
+
+    def expected_parameters(self):
+        return ['tags', 'tags_and', 'tags_not']
 
 
 @admin.register(Tag)

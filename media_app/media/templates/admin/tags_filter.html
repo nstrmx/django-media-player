@@ -1,0 +1,278 @@
+{% load i18n %}
+<details data-filter-title="{{ title }}" open>
+  <summary>
+    {% blocktranslate with filter_title=title %} By {{ filter_title }} {% endblocktranslate %}
+  </summary>
+  <form class="tags-filter-form">
+    <input type="search" class="tags-filter-search" placeholder="{% translate 'Filter tags…' %}" aria-label="{% translate 'Filter tags' %}">
+    <div class="tags-filter-scroll">
+    <table class="tags-filter-table">
+      <tr>
+        <th>OR</th>
+        <th>AND</th>
+        <th>NOT</th>
+        <th>Tag</th>
+      </tr>
+      {% for choice in choices %}
+      <tr>
+        <td>
+          <label class="tags-filter-cell">
+            <input type="checkbox" class="tags-or" value="{{ choice.pk }}">
+          </label>
+        </td>
+        <td>
+          <label class="tags-filter-cell">
+            <input type="checkbox" class="tags-and" value="{{ choice.pk }}" data-has-media="{{ choice.has_media|yesno:'true,false' }}">
+          </label>
+        </td>
+        <td>
+          <label class="tags-filter-cell">
+            <input type="checkbox" class="tags-not" value="{{ choice.pk }}">
+          </label>
+        </td>
+        <td>
+          {{ choice.display }}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    </div>
+    <div class="tags-filter-actions">
+      <button type="button" class="tags-filter-apply">{% translate "Apply" %}</button>
+      <button type="button" class="tags-filter-clear">{% translate "Clear all" %}</button>
+    </div>
+  </form>
+</details>
+<style>
+.tags-filter-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.tags-filter-table th {
+  text-align: left;
+  padding: 2px 4px;
+  font-size: 0.9em;
+  color: #666;
+}
+.tags-filter-table td {
+  vertical-align: top;
+  padding: 0 4px;
+}
+.tags-filter-cell {
+  display: block;
+  padding: 1px 0;
+  cursor: pointer;
+}
+.tags-filter-cell input {
+  margin-right: 4px;
+}
+.tags-filter-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+.tags-filter-search {
+  width: 100%;
+  padding: 4px 8px;
+  margin-bottom: 8px;
+  box-sizing: border-box;
+  border: 1px solid var(--border-color);
+  background-color: var(--darkened-bg);
+  color: var(--body-fg);
+}
+.tags-filter-scroll {
+  max-height: 300px;
+  overflow-y: auto;
+}
+.tags-filter-scroll table {
+  margin: 0;
+}
+.tags-filter-scroll thead th {
+  position: sticky;
+  top: 0;
+  background: #f6f6f6;
+  z-index: 1;
+}
+.tags-filter-scroll tr.hidden {
+  display: none;
+}
+.tags-filter-form {
+  padding: 15px;
+}
+</style>
+<script>
+(function() {
+  var details = document.querySelector('[data-filter-title="{{ title }}"]');
+  if (!details) return;
+
+  var form = details.querySelector('.tags-filter-form');
+  var applyBtn = details.querySelector('.tags-filter-apply');
+  var clearBtn = details.querySelector('.tags-filter-clear');
+  var searchInput = details.querySelector('.tags-filter-search');
+
+  function getParams() {
+    return new URLSearchParams(window.location.search);
+  }
+
+  function getClearParams() {
+    var params = getParams();
+    params.delete('tags');
+    params.delete('tags_and');
+    params.delete('tags_not');
+    return params.toString();
+  }
+
+  function disableCheckboxesWithoutMedia() {
+    details.querySelectorAll('.tags-or, .tags-and').forEach(function(cb) {
+      if (cb.dataset.hasMedia === 'false') {
+        cb.disabled = true;
+      }
+    });
+  }
+
+  function filterTags(query) {
+    var rows = details.querySelectorAll('.tags-filter-table tr');
+    rows.forEach(function(row) {
+      var label = row.querySelector('td:last-child');
+      if (!label) return;
+      var text = label.textContent.toLowerCase();
+      if (text.indexOf(query.toLowerCase()) !== -1) {
+        row.classList.remove('hidden');
+      } else {
+        row.classList.add('hidden');
+      }
+    });
+  }
+
+  searchInput.addEventListener('input', function(e) {
+    filterTags(e.target.value);
+  });
+
+  function syncCheckboxesFromUrl() {
+    var params = getParams();
+    var orTags = params.getAll('tags');
+    var andTags = params.getAll('tags_and');
+    var notTags = params.getAll('tags_not');
+    
+    details.querySelectorAll('.tags-or').forEach(function(cb) {
+      cb.checked = orTags.indexOf(cb.value) !== -1;
+      var row = cb.closest('tr');
+      var notCb = row.querySelector('.tags-not');
+      var andCb = row.querySelector('.tags-and');
+      if (cb.checked) {
+        notCb.checked = false;
+        notCb.disabled = true;
+      } else if (!andCb.checked) {
+        notCb.disabled = false;
+      }
+    });
+    details.querySelectorAll('.tags-and').forEach(function(cb) {
+      cb.checked = andTags.indexOf(cb.value) !== -1;
+      var row = cb.closest('tr');
+      var notCb = row.querySelector('.tags-not');
+      var orCb = row.querySelector('.tags-or');
+      if (cb.checked) {
+        notCb.checked = false;
+        notCb.disabled = true;
+      } else if (!orCb.checked) {
+        notCb.disabled = false;
+      }
+    });
+    details.querySelectorAll('.tags-not').forEach(function(cb) {
+      cb.checked = notTags.indexOf(cb.value) !== -1;
+      var row = cb.closest('tr');
+      var andCb = row.querySelector('.tags-and');
+      var orCb = row.querySelector('.tags-or');
+      if (cb.checked) {
+        andCb.checked = false;
+        andCb.disabled = true;
+        orCb.checked = false;
+        orCb.disabled = true;
+      } else {
+        andCb.disabled = false;
+        orCb.disabled = false;
+      }
+    });
+  }
+
+  function handleNotCheckboxChange(e) {
+    if (!e.target.classList.contains('tags-not')) return;
+    var row = e.target.closest('tr');
+    var andCb = row.querySelector('.tags-and');
+    var orCb = row.querySelector('.tags-or');
+    if (e.target.checked) {
+      andCb.checked = false;
+      andCb.disabled = true;
+      orCb.checked = false;
+      orCb.disabled = true;
+    } else {
+      andCb.disabled = false;
+      orCb.disabled = false;
+    }
+  }
+
+  function handleAndCheckboxChange(e) {
+    if (!e.target.classList.contains('tags-and')) return;
+    var row = e.target.closest('tr');
+    var notCb = row.querySelector('.tags-not');
+    var orCb = row.querySelector('.tags-or');
+    if (e.target.checked) {
+      notCb.checked = false;
+      notCb.disabled = true;
+    } else if (!orCb.checked) {
+      notCb.disabled = false;
+    }
+  }
+
+  function handleOrCheckboxChange(e) {
+    if (!e.target.classList.contains('tags-or')) return;
+    var row = e.target.closest('tr');
+    var notCb = row.querySelector('.tags-not');
+    var andCb = row.querySelector('.tags-and');
+    if (e.target.checked) {
+      notCb.checked = false;
+      notCb.disabled = true;
+    } else if (!andCb.checked) {
+      notCb.disabled = false;
+    }
+  }
+
+  details.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+    cb.addEventListener('change', handleNotCheckboxChange);
+    cb.addEventListener('change', handleAndCheckboxChange);
+    cb.addEventListener('change', handleOrCheckboxChange);
+  });
+
+  syncCheckboxesFromUrl();
+  disableCheckboxesWithoutMedia();
+
+  applyBtn.addEventListener('click', function() {
+    var orChecked = Array.from(details.querySelectorAll('.tags-or:checked')).map(function(cb) { return cb.value; });
+    var andChecked = Array.from(details.querySelectorAll('.tags-and:checked')).map(function(cb) { return cb.value; });
+    var notChecked = Array.from(details.querySelectorAll('.tags-not:checked')).map(function(cb) { return cb.value; });
+
+    if (andChecked.length === 0 && orChecked.length === 0 && notChecked.length === 0) {
+      window.location.search = getClearParams();
+      return;
+    }
+
+    var params = getParams();
+    params.delete('tags');
+    params.delete('tags_and');
+    params.delete('tags_not');
+
+    orChecked.forEach(function(v) { params.append('tags', v); });
+    andChecked.forEach(function(v) { params.append('tags_and', v); });
+    notChecked.forEach(function(v) { params.append('tags_not', v); });
+
+    window.location.search = params.toString();
+  });
+
+  clearBtn.addEventListener('click', function() {
+    details.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+      cb.checked = false;
+    });
+    window.location.search = getClearParams();
+  });
+})();
+</script>
