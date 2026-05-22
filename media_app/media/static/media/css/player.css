@@ -11,9 +11,22 @@
     height: 100vh;
     background: #f1f3f4;
     border: 1px solid lightgray;
+    overflow: auto;
+}
+#player_buttons {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    background: #f1f3f4;
+    border-top: 1px solid lightgray;
+    z-index: 10;
 }
 #player_container button {
-    margin: auto;
     padding: calc(var(--container-padding) / 2);
 }
 #media_controller {
@@ -30,4 +43,7 @@
 }
 #result_list .field-play > button {
     width: 30px;
+}
+#info {
+    height: 20px;
 }

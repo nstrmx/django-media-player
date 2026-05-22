@@ -33,20 +33,18 @@ class MediaPlayer {
     mount() {
         const ctype = this.controller_type;
         const $player = $(`
-<center id="player_container">
+<div id="player_container">
     <div>
         <${ctype} controls autoplay preload="metadata" src="" id="media_controller" style="width: 100%;"></${ctype}>
     </div>
-    <p style="width: 100%">
-        <div style="width: 100%"></div>
+    <p id="info" style="width: 100%">
+    </p>
+    <div id="player_buttons">
         <button id="prev">prev</button>
         <button id="next">next</button>
         <button id="repeat">repeat</button>
-        <div style="width: 100%"></div>
-    </p>
-    <p id="info" style="width: 100%">
-    </p>
-</center>
+    </div>
+</div>
         `);
         $("#root").html($player);
         this.$container = $("#player_container").first();
